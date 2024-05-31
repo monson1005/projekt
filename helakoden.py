@@ -10,6 +10,7 @@ import joblib
 st.title("Nurse Bot 👩‍⚕️")
 
 # Ange den fullständiga sökvägen till CSV-filen
+config_path = "/home/monasaffari/Desktop/hello/config.py"
 csv_file_path = os.path.join(os.path.dirname(__file__), "2023.csv")
 
 # Läs in data från CSV-filen med rätt separator och specifiera kolumnnamn
