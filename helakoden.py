@@ -7,7 +7,6 @@ import os
 import joblib
 from dotenv import load_dotenv
 import gdown
-import sys
 
 # Ladda hemligheter från .env-filen
 load_dotenv()
@@ -20,24 +19,38 @@ openai.api_key = api_key
 
 st.title("Nurse Bot 👩‍⚕️")
 
-# URL till den delbara länken från Google Drive
-file_id = '1Ji6_dqSAW9h6_ae3L44Ul0BzJiA5yITB'
-url = f'https://drive.google.com/uc?id={file_id}'
-output = '2023.csv'
+# URL till den delbara länken från Google Drive för CSV-filen
+csv_file_id = '1Ji6_dqSAW9h6_ae3L44Ul0BzJiA5yITB'
+csv_url = f'https://drive.google.com/uc?id={csv_file_id}'
+csv_output = '2023.csv'
 
-# Ladda ner filen från Google Drive
-gdown.download(url, output, quiet=True)
+# Ladda ner CSV-filen från Google Drive
+gdown.download(csv_url, csv_output, quiet=True)
 
 # Läs in data från CSV-filen med rätt separator och specifiera kolumnnamn
-data = pd.read_csv(output, sep=";", names=[
+data = pd.read_csv(csv_output, sep=";", names=[
     "Id", "Headline", "Application_deadline", "Amount", "Description", 
     "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
     "Employer_name", "Employer_workplace", "Publication_date"
 ])
 
+# URL till den delbara länken från Google Drive för model.joblib
+model_url = 'https://drive.google.com/uc?id=1pXfGD_cpx3ZT2MIQJGLKHTz7gkvVhw6C'
+model_output = 'model.joblib'
+
+# Ladda ner model.joblib från Google Drive
+gdown.download(model_url, model_output, quiet=True)
+
+# URL till den delbara länken från Google Drive för vectorizer.joblib
+vectorizer_url = 'https://drive.google.com/uc?id=1E2ca1nQmUuLbD8pT5lPKPJYNTxXtB54X'
+vectorizer_output = 'vectorizer.joblib'
+
+# Ladda ner vectorizer.joblib från Google Drive
+gdown.download(vectorizer_url, vectorizer_output, quiet=True)
+
 # Ladda klassificeringsmodellen och vectorizern
-model = joblib.load('model.joblib')
-vectorizer = joblib.load('vectorizer.joblib')
+model = joblib.load(model_output)
+vectorizer = joblib.load(vectorizer_output)
 
 # Funktion för att extrahera sjukskötersketyp från Headline
 def extract_nurse_type(headline):
@@ -155,13 +168,13 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
                 st.write(f"**Beskrivning:** {row['Description']}")
                 st.write(f"**Typ:** {row['Type']}")
                 st.write(f"**Lön:** {row['Salary']}")
-                st.write(f"**Varaktighet:** {row['Duration']}")
                 st.write(f"**Arbetstid:** {row['Working_hours']}")
                 st.write(f"**Region:** {row['Region']}")
                 st.write(f"**Kommun:** {row['Municipality']}")
                 st.write(f"**Arbetsgivare:** {row['Employer_name']}")
                 st.write(f"**Arbetsplats:** {row['Employer_workplace']}")
-                st.write(f"**Publiceringsdatum:** {row['Publication_date']}\n")
-
+                st.write(f"**Publiceringsdatum:** {row['Publication_date']}")
+                st.write(f"**Ansökningsfrist:** {row['Application_deadline']}")
+                
     st.session_state.messages.append({"role": "assistant", "content": response})
 
