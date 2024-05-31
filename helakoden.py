@@ -26,6 +26,19 @@ data = pd.read_csv(csv_file_path, sep=";", names=[
     "Employer_name", "Employer_workplace", "Publication_date"
 ])
 
+
+try:
+    # Läs in data från CSV-filen
+    data = pd.read_csv(csv_file_path, sep=";", names=[
+        "Id", "Headline", "Application_deadline", "Amount", "Description", 
+        "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
+        "Employer_name", "Employer_workplace", "Publication_date"
+    ])
+except FileNotFoundError:
+    print("Filen kunde inte hittas. Kontrollera sökvägen och filens namn.")
+except Exception as e:
+    print("Ett oväntat fel uppstod vid inläsning av filen:", e)
+
 # Ladda klassificeringsmodellen och vectorizern
 model = joblib.load('model.joblib')
 vectorizer = joblib.load('vectorizer.joblib')
