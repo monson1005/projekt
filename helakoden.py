@@ -7,6 +7,7 @@ import os
 import joblib
 from dotenv import load_dotenv
 import gdown
+import sys
 
 # Ladda hemligheter från .env-filen
 load_dotenv()
@@ -25,7 +26,7 @@ url = f'https://drive.google.com/uc?id={file_id}'
 output = '2023.csv'
 
 # Ladda ner filen från Google Drive
-gdown.download(url, output, quiet=False)
+gdown.download(url, output, quiet=True)
 
 # Läs in data från CSV-filen med rätt separator och specifiera kolumnnamn
 data = pd.read_csv(output, sep=";", names=[
@@ -163,3 +164,4 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
                 st.write(f"**Publiceringsdatum:** {row['Publication_date']}\n")
 
     st.session_state.messages.append({"role": "assistant", "content": response})
+
