@@ -3,33 +3,21 @@ import re
 from collections import Counter
 import streamlit as st
 from openai import OpenAI
-from dotenv import load_dotenv
+import config
 import os
 import joblib
 
-load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
 st.title("Nurse Bot 👩‍⚕️")
 
-# Ange sökvägar till CSV-filerna
-csv_file_paths = [
-    "path_to_file/mindre1.csv",
-    "path_to_file/mindre2.csv",
-    "path_to_file/mindre3.csv"
-]
+# Ange den fullständiga sökvägen till CSV-filen
+csv_file_path = "/hem/monasaffari/Skrivbord/hello/2023.csv"
 
-# Läs in data från alla CSV-filerna
-data_frames = []
-for csv_file_path in csv_file_paths:
-    df = pd.read_csv(csv_file_path, sep=";", names=[
-        "Id", "Headline", "Application_deadline", "Amount", "Description", 
-        "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
-        "Employer_name", "Employer_workplace", "Publication_date"
-    ])
-    data_frames.append(df)
-
-data = pd.concat(data_frames, ignore_index=True)
+# Läs in data från CSV-filen med rätt separator och specifiera kolumnnamn
+data = pd.read_csv(csv_file_path, sep=";", names=[
+    "Id", "Headline", "Application_deadline", "Amount", "Description", 
+    "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
+    "Employer_name", "Employer_workplace", "Publication_date"
+])
 
 # Ladda klassificeringsmodellen och vectorizern
 model = joblib.load('model.joblib')
@@ -75,7 +63,7 @@ def filter_jobs_by_keyword(keyword):
     predictions = model.predict(keyword_tfidf)
     return data[predictions == 1]
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=config.OPENAI_API_KEY)
 
 if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "gpt-3.5-turbo"
@@ -127,15 +115,4 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
     elif "selected_keywords" not in st.session_state:
         st.session_state.selected_keywords = prompt
         filtered_data = data[
-            (data['Municipality'] == st.session_state.selected_city) &
-            (data['Nurse_type'] == st.session_state.selected_nurse_type) &
-            (data['Working_hours'] == st.session_state.selected_working_hours)
-        ]
-        keyword_filtered_data = filter_jobs_by_keyword(st.session_state.selected_keywords)
-        final_filtered_data = pd.merge(
-            filtered_data, keyword_filtered_data, how='inner',
-            on=['Id', 'Headline', 'Application_deadline', 'Amount', 'Description', 'Type', 'Salary', 'Duration', 'Working_hours', 'Region', 'Municipality', 'Employer_name', 'Employer_workplace', 'Publication_date']
-        )
-
-        response = f"Resultat för jobb i {st.session_state.selected_city.capitalize()} som {st.session_state.selected_nurse_type.capitalize()} med {st.session_state.selected_working_hours} arbetstid och nyckelord '{st.session_state.selected_keywords}':\n\n"
-
+            (data['Municipality']
