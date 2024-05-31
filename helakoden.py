@@ -17,7 +17,7 @@ swedish_stopwords = [
 ]
 
 # Hitta CSV-filer i mappen
-csv_files = [file for file in os.listdir("/home/appuser/Desktop/Hello") if file.endswith('.csv')]
+csv_files = [file for file in os.listdir("/home/monasaffari/Desktop/Hello") if file.endswith('.csv')]
 
 # Kontrollera om filer finns och ladda data
 if csv_files:
