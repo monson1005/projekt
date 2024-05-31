@@ -19,15 +19,31 @@ csv_folder_path = os.path.expanduser("~/Desktop/Hello")
 # Samla alla CSV-filer i mappen
 csv_files = glob.glob(os.path.join(csv_folder_path, "*.csv"))
 
+# Kontrollera att CSV-filer hittades
+if not csv_files:
+    st.error("Inga CSV-filer hittades i mappen.")
+    st.stop()
+
 # Läs in data från alla CSV-filer och kombinera dem till en DataFrame
 data_frames = []
 for file in csv_files:
-    df = pd.read_csv(file, sep=";", names=[
-        "Id", "Headline", "Application_deadline", "Amount", "Description", 
-        "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
-        "Employer_name", "Employer_workplace", "Publication_date"
-    ])
-    data_frames.append(df)
+    try:
+        df = pd.read_csv(file, sep=";", names=[
+            "Id", "Headline", "Application_deadline", "Amount", "Description", 
+            "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
+            "Employer_name", "Employer_workplace", "Publication_date"
+        ])
+        if not df.empty:
+            data_frames.append(df)
+        else:
+            st.warning(f"Filen {file} är tom och kommer att ignoreras.")
+    except Exception as e:
+        st.warning(f"Kunde inte läsa filen {file}. Fel: {e}")
+
+# Kontrollera att det finns data att kombinera
+if not data_frames:
+    st.error("Inga giltiga data kunde läsas in från CSV-filerna.")
+    st.stop()
 
 data = pd.concat(data_frames, ignore_index=True)
 
