@@ -18,6 +18,15 @@ openai.api_key = api_key
 
 st.title("Nurse Bot 👩‍⚕️")
 
+# Ange den fullständiga sökvägen till modellfilen
+model_path = "/fullständig/sökväg/till/modellfilen/model.joblib"
+
+# Läs in modellen
+model = joblib.load(model_path)
+
+# Ange den fullständiga sökvägen till mappen där de mindre filerna finns
+folder_path = "/fullständig/sökväg/till/mappen/med/filerna"
+
 # Funktion för att läsa in alla mindre CSV-filer och kombinera dem till en DataFrame
 def load_data_from_files(folder_path):
     all_files = [file for file in os.listdir(folder_path) if file.endswith('.csv')]
@@ -31,14 +40,10 @@ def load_data_from_files(folder_path):
         dataframes.append(df)
     return pd.concat(dataframes, ignore_index=True)
 
-# Ange den fullständiga sökvägen till mappen där de mindre filerna finns
-folder_path = "/fullständig/sökväg/till/mappen/med/filerna"
-
 # Läs in data från alla mindre CSV-filer
 data = load_data_from_files(folder_path)
 
-# Ladda klassificeringsmodellen och vectorizern
-model = joblib.load('model.joblib')
+# Ladda vectorizern
 vectorizer = joblib.load('vectorizer.joblib')
 
 # Funktion för att extrahera sjukskötersketyp från Headline
@@ -135,6 +140,4 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
             (data['Nurse_type'] == st.session_state.selected_nurse_type) &
             (data['Working_hours'] == st.session_state.selected_working_hours)
         ]
-        keyword_filtered_data = filter_jobs_by_keyword(st.session_state.selected_keywords)
-        final_filtered_data = pd.merge(
-            filtered_data
+        keyword_filtered_data = filter_jobs_by_keyword(st
