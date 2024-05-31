@@ -6,6 +6,7 @@ import openai
 import os
 import joblib
 from dotenv import load_dotenv
+import gdown
 
 # Ladda hemligheter från .env-filen
 load_dotenv()
@@ -18,11 +19,16 @@ openai.api_key = api_key
 
 st.title("Nurse Bot 👩‍⚕️")
 
-# Ange den fullständiga sökvägen till CSV-filen
-csv_file_path = os.path.join(os.path.dirname(__file__), "2023.csv")
+# URL till den delbara länken från Google Drive
+file_id = '1Ji6_dqSAW9h6_ae3L44Ul0BzJiA5yITB'
+url = f'https://drive.google.com/uc?id={file_id}'
+output = '2023.csv'
+
+# Ladda ner filen från Google Drive
+gdown.download(url, output, quiet=False)
 
 # Läs in data från CSV-filen med rätt separator och specifiera kolumnnamn
-data = pd.read_csv(csv_file_path, sep=";", names=[
+data = pd.read_csv(output, sep=";", names=[
     "Id", "Headline", "Application_deadline", "Amount", "Description", 
     "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
     "Employer_name", "Employer_workplace", "Publication_date"
