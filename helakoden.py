@@ -3,14 +3,21 @@ import re
 from collections import Counter
 import streamlit as st
 from openai import OpenAI
-import config
 import os
 import joblib
+from dotenv import load_dotenv
+
+# Ladda miljövariabler från filen 'env'
+load_dotenv("env")
+
+# Hämta API-nyckeln från miljövariabler
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 st.title("Nurse Bot 👩‍⚕️")
 
-# Ange den fullständiga sökvägen till CSV-filen
-csv_file_path = "/hem/monasaffari/Skrivbord/hello/2023.csv"
+# Bygg sökvägen till CSV-filen relativt användarens skrivbord
+desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+csv_file_path = os.path.join(desktop_path, "Hello", "2023.csv")
 
 # Läs in data från CSV-filen med rätt separator och specifiera kolumnnamn
 data = pd.read_csv(csv_file_path, sep=";", names=[
@@ -63,7 +70,7 @@ def filter_jobs_by_keyword(keyword):
     predictions = model.predict(keyword_tfidf)
     return data[predictions == 1]
 
-client = OpenAI(api_key=config.OPENAI_API_KEY)
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "gpt-3.5-turbo"
@@ -115,4 +122,14 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
     elif "selected_keywords" not in st.session_state:
         st.session_state.selected_keywords = prompt
         filtered_data = data[
-            (data['Municipality']
+            (data['Municipality'] == st.session_state.selected_city) &
+            (data['Nurse_type'] == st.session_state.selected_nurse_type) &
+            (data['Working_hours'] == st.session_state.selected_working_hours)
+        ]
+        keyword_filtered_data = filter_jobs_by_keyword(st.session_state.selected_keywords)
+        final_filtered_data = pd.merge(
+            filtered_data, keyword_filtered_data, how='inner',
+            on=['Id', 'Headline', 'Application_deadline', 'Amount', 'Description', 'Type', 'Salary', 'Duration', 'Working_hours', 'Region', 'Municipality', 'Employer_name', 'Employer_workplace', 'Publication_date']
+        )
+
+        response = f"Resultat för jobb i {st.session_state.selected_city.capitalize()} som {st.session_state.selected_nurse_type.capitalize()} med {st.session_state.selected_working
