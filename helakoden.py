@@ -3,21 +3,14 @@ import re
 from collections import Counter
 import streamlit as st
 from openai import OpenAI
+import config
 import os
 import joblib
-from dotenv import load_dotenv
-
-# Ladda miljövariabler från filen 'env'
-load_dotenv("env")
-
-# Hämta API-nyckeln från miljövariabler
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 st.title("Nurse Bot 👩‍⚕️")
 
-# Bygg sökvägen till CSV-filen relativt användarens skrivbord
-desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
-csv_file_path = os.path.join(desktop_path, "Hello", "2023.csv")
+# Ange den fullständiga sökvägen till CSV-filen
+csv_file_path = os.path.join(os.path.dirname(__file__), "2023.csv")
 
 # Läs in data från CSV-filen med rätt separator och specifiera kolumnnamn
 data = pd.read_csv(csv_file_path, sep=";", names=[
@@ -25,19 +18,6 @@ data = pd.read_csv(csv_file_path, sep=";", names=[
     "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
     "Employer_name", "Employer_workplace", "Publication_date"
 ])
-
-
-try:
-    # Läs in data från CSV-filen
-    data = pd.read_csv(csv_file_path, sep=";", names=[
-        "Id", "Headline", "Application_deadline", "Amount", "Description", 
-        "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
-        "Employer_name", "Employer_workplace", "Publication_date"
-    ])
-except FileNotFoundError:
-    print("Filen kunde inte hittas. Kontrollera sökvägen och filens namn.")
-except Exception as e:
-    print("Ett oväntat fel uppstod vid inläsning av filen:", e)
 
 # Ladda klassificeringsmodellen och vectorizern
 model = joblib.load('model.joblib')
@@ -83,7 +63,7 @@ def filter_jobs_by_keyword(keyword):
     predictions = model.predict(keyword_tfidf)
     return data[predictions == 1]
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=config.OPENAI_API_KEY)
 
 if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "gpt-3.5-turbo"
@@ -113,7 +93,7 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
         selected_city = get_municipality_choice(prompt)
         if selected_city:
             st.session_state.selected_city = selected_city
-            response = f"Du har valt {selected_city.capitalize()}.\nVilken typ av sjuksköterska är du intresserad av? Här är alternativen:\n"
+            response = f"Du har valt {selected_city.capitalize()}.\nVilken typ av sjuksköterska är du specialicerad som? Här är alternativen:\n"
             for nurse_type in common_nurse_types:
                 response += f"- {nurse_type.capitalize()}\n"
         else:
@@ -129,7 +109,7 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
         selected_working_hours = get_working_hours_choice(prompt)
         if selected_working_hours:
             st.session_state.selected_working_hours = selected_working_hours
-            response = "Skriv in ett eller flera nyckelord för att filtrera jobb ytterligare:\n"
+            response = "Ange ett eller flera nyckelord som beskriver de egenskaper du vill att ditt jobb ska innehålla, till exempel utvecklande, ledarskap, ansvar, roligt eller liknande :\n"
         else:
             response = "Denna arbetstid finns inte i våran lista! Försök igen."
     elif "selected_keywords" not in st.session_state:
@@ -145,4 +125,28 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
             on=['Id', 'Headline', 'Application_deadline', 'Amount', 'Description', 'Type', 'Salary', 'Duration', 'Working_hours', 'Region', 'Municipality', 'Employer_name', 'Employer_workplace', 'Publication_date']
         )
 
-        response = f"Resultat för jobb i {st.session_state.selected_city.capitalize()} som {st.session_state.selected_nurse_type.capitalize()} med {st.session_state.selected_working
+        response = f"Resultat för jobb i {st.session_state.selected_city.capitalize()} som {st.session_state.selected_nurse_type.capitalize()} med {st.session_state.selected_working_hours} arbetstid och nyckelord '{st.session_state.selected_keywords}':\n\n"
+        show_results = True
+        if final_filtered_data.empty:
+            response += "Inga jobb hittades."
+
+    with st.chat_message("assistant"):
+        st.markdown(response)
+
+    if show_results and not final_filtered_data.empty:
+        for index, row in final_filtered_data.iterrows():
+            with st.expander(f"{row['Headline']}"):
+                st.write(f"**Id:** {row['Id']}")
+                st.write(f"**Titel:** {row['Headline']}")
+                st.write(f"**Beskrivning:** {row['Description']}")
+                st.write(f"**Typ:** {row['Type']}")
+                st.write(f"**Lön:** {row['Salary']}")
+                st.write(f"**Varaktighet:** {row['Duration']}")
+                st.write(f"**Arbetstid:** {row['Working_hours']}")
+                st.write(f"**Region:** {row['Region']}")
+                st.write(f"**Kommun:** {row['Municipality']}")
+                st.write(f"**Arbetsgivare:** {row['Employer_name']}")
+                st.write(f"**Arbetsplats:** {row['Employer_workplace']}")
+                st.write(f"**Publiceringsdatum:** {row['Publication_date']}\n")
+
+    st.session_state.messages.append({"role": "assistant", "content": response})
