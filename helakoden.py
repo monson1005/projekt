@@ -7,6 +7,13 @@ import os
 import joblib
 from dotenv import load_dotenv
 
+
+# Ange den fullständiga sökvägen till modellfilen på skrivbordet i mappen "Hello"
+model_path = os.path.expanduser("~/Desktop/Hello/model.joblib")
+
+# Ladda modellen från den fullständiga sökvägen
+model = joblib.load(model_path)
+
 # Ladda hemligheter från .env-filen
 load_dotenv()
 
