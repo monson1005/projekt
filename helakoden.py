@@ -5,12 +5,13 @@ import streamlit as st
 from openai import OpenAI
 import os
 import joblib
+import requests  # Lägg till importen för requests-modulen
 
 st.title("Nurse Bot 👩‍⚕️")
 
-# Ange den fullständiga sökvägen till CSV-filen
-
-csv_file_path = os.path.join(os.path.dirname(__file__), "2023.csv")
+# Uppdatera sökvägen till CSV-filen med URL från GitHub-repository
+github_repo_url = "https://github.com/monson1005/projekt/blob/main/mindre1.csv"
+csv_file_path = os.path.join(github_repo_url, "mindre1.csv")
 
 # Läs in data från CSV-filen med rätt separator och specifiera kolumnnamn
 data = pd.read_csv(csv_file_path, sep=";", names=[
@@ -18,6 +19,10 @@ data = pd.read_csv(csv_file_path, sep=";", names=[
     "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
     "Employer_name", "Employer_workplace", "Publication_date"
 ])
+
+# Resten av koden förblir oförändrad...
+
+
 
 # Ladda klassificeringsmodellen och vectorizern
 model = joblib.load('model.joblib')
