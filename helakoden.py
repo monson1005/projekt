@@ -3,10 +3,13 @@ import re
 from collections import Counter
 import streamlit as st
 from openai import OpenAI
-import config
 import os
 import joblib
 import glob
+from dotenv import load_dotenv
+
+# Ladda miljövariabler från .env-filen
+load_dotenv()
 
 st.title("Nurse Bot 👩‍⚕️")
 
@@ -75,7 +78,10 @@ def filter_jobs_by_keyword(keyword):
     predictions = model.predict(keyword_tfidf)
     return data[predictions == 1]
 
-client = OpenAI(api_key=config.OPENAI_API_KEY)
+# Läser in OpenAI API-nyckel från miljövariabler
+api_key = os.getenv("OPENAI_API_KEY")
+
+client = OpenAI(api_key=api_key)
 
 if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "gpt-3.5-turbo"
@@ -159,6 +165,5 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
                 st.write(f"**Kommun:** {row['Municipality']}")
                 st.write(f"**Arbetsgivare:** {row['Employer_name']}")
                 st.write(f"**Arbetsplats:** {row['Employer_workplace']}")
-                st.write(f"**Publiceringsdatum:** {row['Publication_date']}\n")
+                st.write(f"**Publiceringsdatum:** {row['Publication_date']}")
 
-    st.session_state.messages.append({"role": "assistant", "content": response})
