@@ -18,15 +18,24 @@ openai.api_key = api_key
 
 st.title("Nurse Bot 👩‍⚕️")
 
-# Ange den fullständiga sökvägen till CSV-filen
-csv_file_path = os.path.join(os.path.dirname(__file__), "2023.csv")
+# Funktion för att läsa in alla mindre CSV-filer och kombinera dem till en DataFrame
+def load_data_from_files(folder_path):
+    all_files = [file for file in os.listdir(folder_path) if file.endswith('.csv')]
+    dataframes = []
+    for file in all_files:
+        df = pd.read_csv(os.path.join(folder_path, file), sep=";", names=[
+            "Id", "Headline", "Application_deadline", "Amount", "Description", 
+            "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
+            "Employer_name", "Employer_workplace", "Publication_date"
+        ])
+        dataframes.append(df)
+    return pd.concat(dataframes, ignore_index=True)
 
-# Läs in data från CSV-filen med rätt separator och specifiera kolumnnamn
-data = pd.read_csv(csv_file_path, sep=";", names=[
-    "Id", "Headline", "Application_deadline", "Amount", "Description", 
-    "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
-    "Employer_name", "Employer_workplace", "Publication_date"
-])
+# Ange den fullständiga sökvägen till mappen där de mindre filerna finns
+folder_path = "/fullständig/sökväg/till/mappen/med/filerna"
+
+# Läs in data från alla mindre CSV-filer
+data = load_data_from_files(folder_path)
 
 # Ladda klassificeringsmodellen och vectorizern
 model = joblib.load('model.joblib')
@@ -128,33 +137,4 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
         ]
         keyword_filtered_data = filter_jobs_by_keyword(st.session_state.selected_keywords)
         final_filtered_data = pd.merge(
-            filtered_data, keyword_filtered_data, how='inner',
-            on=['Id', 'Headline', 'Application_deadline', 'Amount', 'Description', 'Type', 'Salary', 'Duration', 'Working_hours', 'Region', 'Municipality', 'Employer_name', 'Employer_workplace', 'Publication_date']
-        )
-
-        response = f"Resultat för jobb i {st.session_state.selected_city.capitalize()} som {st.session_state.selected_nurse_type.capitalize()} med {st.session_state.selected_working_hours} arbetstid och nyckelord '{st.session_state.selected_keywords}':\n\n"
-        show_results = True
-        if final_filtered_data.empty:
-            response += "Inga jobb hittades."
-
-    with st.chat_message("assistant"):
-        st.markdown(response)
-
-    if show_results and not final_filtered_data.empty:
-        for index, row in final_filtered_data.iterrows():
-            with st.expander(f"{row['Headline']}"):
-                st.write(f"**Id:** {row['Id']}")
-                st.write(f"**Titel:** {row['Headline']}")
-                st.write(f"**Beskrivning:** {row['Description']}")
-                st.write(f"**Typ:** {row['Type']}")
-                st.write(f"**Lön:** {row['Salary']}")
-                st.write(f"**Varaktighet:** {row['Duration']}")
-                st.write(f"**Arbetstid:** {row['Working_hours']}")
-                st.write(f"**Region:** {row['Region']}")
-                st.write(f"**Kommun:** {row['Municipality']}")
-                st.write(f"**Arbetsgivare:** {row['Employer_name']}")
-                st.write(f"**Arbetsplats:** {row['Employer_workplace']}")
-                st.write(f"**Publiceringsdatum:** {row['Publication_date']}\n")
-
-    st.session_state.messages.append({"role": "assistant", "content": response})
-
+            filtered_data
