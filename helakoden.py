@@ -2,56 +2,38 @@ import pandas as pd
 import re
 from collections import Counter
 import streamlit as st
-import openai
+from openai import OpenAI
+import config
 import os
 import joblib
-from dotenv import load_dotenv
-
-
-# Ange den fullständiga sökvägen till modellfilen på skrivbordet i mappen "Hello"
-model_path = os.path.expanduser("~/Desktop/Hello/model.joblib")
-
-# Ladda modellen från den fullständiga sökvägen
-model = joblib.load(model_path)
-
-# Ladda hemligheter från .env-filen
-load_dotenv()
-
-# Hämta API-nyckeln från miljövariabler
-api_key = os.getenv('OPENAI_API_KEY')
-
-# Konfigurera OpenAI med din API-nyckel
-openai.api_key = api_key
+import glob
 
 st.title("Nurse Bot 👩‍⚕️")
 
+# Ange sökvägen till mappen med de uppdelade CSV-filerna
+csv_folder_path = os.path.expanduser("~/Desktop/Hello")
+
+# Samla alla CSV-filer i mappen
+csv_files = glob.glob(os.path.join(csv_folder_path, "*.csv"))
+
+# Läs in data från alla CSV-filer och kombinera dem till en DataFrame
+data_frames = []
+for file in csv_files:
+    df = pd.read_csv(file, sep=";", names=[
+        "Id", "Headline", "Application_deadline", "Amount", "Description", 
+        "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
+        "Employer_name", "Employer_workplace", "Publication_date"
+    ])
+    data_frames.append(df)
+
+data = pd.concat(data_frames, ignore_index=True)
+
 # Ange den fullständiga sökvägen till modellfilen
-model_path = "/fullständig/sökväg/till/modellfilen/model.joblib"
+model_path = os.path.expanduser("~/Desktop/Hello/model.joblib")
 
-# Läs in modellen
+# Ladda klassificeringsmodellen och vectorizern från den fullständiga sökvägen
 model = joblib.load(model_path)
-
-# Ange den fullständiga sökvägen till mappen där de mindre filerna finns
-folder_path = "/fullständig/sökväg/till/mappen/med/filerna"
-
-# Funktion för att läsa in alla mindre CSV-filer och kombinera dem till en DataFrame
-def load_data_from_files(folder_path):
-    all_files = [file for file in os.listdir(folder_path) if file.endswith('.csv')]
-    dataframes = []
-    for file in all_files:
-        df = pd.read_csv(os.path.join(folder_path, file), sep=";", names=[
-            "Id", "Headline", "Application_deadline", "Amount", "Description", 
-            "Type", "Salary", "Duration", "Working_hours", "Region", "Municipality", 
-            "Employer_name", "Employer_workplace", "Publication_date"
-        ])
-        dataframes.append(df)
-    return pd.concat(dataframes, ignore_index=True)
-
-# Läs in data från alla mindre CSV-filer
-data = load_data_from_files(folder_path)
-
-# Ladda vectorizern
-vectorizer = joblib.load('vectorizer.joblib')
+vectorizer = joblib.load(os.path.expanduser("~/Desktop/Hello/vectorizer.joblib"))
 
 # Funktion för att extrahera sjukskötersketyp från Headline
 def extract_nurse_type(headline):
@@ -93,6 +75,8 @@ def filter_jobs_by_keyword(keyword):
     predictions = model.predict(keyword_tfidf)
     return data[predictions == 1]
 
+client = OpenAI(api_key=config.OPENAI_API_KEY)
+
 if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "gpt-3.5-turbo"
 
@@ -121,7 +105,7 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
         selected_city = get_municipality_choice(prompt)
         if selected_city:
             st.session_state.selected_city = selected_city
-            response = f"Du har valt {selected_city.capitalize()}.\nVilken typ av sjuksköterska är du specialicerad som? Här är alternativen:\n"
+            response = f"Du har valt {selected_city.capitalize()}.\nVilken typ av sjuksköterska är du intresserad av? Här är alternativen:\n"
             for nurse_type in common_nurse_types:
                 response += f"- {nurse_type.capitalize()}\n"
         else:
@@ -137,7 +121,7 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
         selected_working_hours = get_working_hours_choice(prompt)
         if selected_working_hours:
             st.session_state.selected_working_hours = selected_working_hours
-            response = "Ange ett eller flera nyckelord som beskriver de egenskaper du vill att ditt jobb ska innehålla, till exempel utvecklande, ledarskap, ansvar, roligt eller liknande :\n"
+            response = "Skriv in ett eller flera nyckelord för att filtrera jobb ytterligare:\n"
         else:
             response = "Denna arbetstid finns inte i våran lista! Försök igen."
     elif "selected_keywords" not in st.session_state:
@@ -147,4 +131,34 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
             (data['Nurse_type'] == st.session_state.selected_nurse_type) &
             (data['Working_hours'] == st.session_state.selected_working_hours)
         ]
-        keyword_filtered_data = filter_jobs_by_keyword(st
+        keyword_filtered_data = filter_jobs_by_keyword(st.session_state.selected_keywords)
+        final_filtered_data = pd.merge(
+            filtered_data, keyword_filtered_data, how='inner',
+            on=['Id', 'Headline', 'Application_deadline', 'Amount', 'Description', 'Type', 'Salary', 'Duration', 'Working_hours', 'Region', 'Municipality', 'Employer_name', 'Employer_workplace', 'Publication_date']
+        )
+
+        response = f"Resultat för jobb i {st.session_state.selected_city.capitalize()} som {st.session_state.selected_nurse_type.capitalize()} med {st.session_state.selected_working_hours} arbetstid och nyckelord '{st.session_state.selected_keywords}':\n\n"
+        show_results = True
+        if final_filtered_data.empty:
+            response += "Inga jobb hittades."
+
+    with st.chat_message("assistant"):
+        st.markdown(response)
+
+    if show_results and not final_filtered_data.empty:
+        for index, row in final_filtered_data.iterrows():
+            with st.expander(f"{row['Headline']}"):
+                st.write(f"**Id:** {row['Id']}")
+                st.write(f"**Titel:** {row['Headline']}")
+                st.write(f"**Beskrivning:** {row['Description']}")
+                st.write(f"**Typ:** {row['Type']}")
+                st.write(f"**Lön:** {row['Salary']}")
+                st.write(f"**Varaktighet:** {row['Duration']}")
+                st.write(f"**Arbetstid:** {row['Working_hours']}")
+                st.write(f"**Region:** {row['Region']}")
+                st.write(f"**Kommun:** {row['Municipality']}")
+                st.write(f"**Arbetsgivare:** {row['Employer_name']}")
+                st.write(f"**Arbetsplats:** {row['Employer_workplace']}")
+                st.write(f"**Publiceringsdatum:** {row['Publication_date']}\n")
+
+    st.session_state.messages.append({"role": "assistant", "content": response})
