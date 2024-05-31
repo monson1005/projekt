@@ -2,7 +2,7 @@ import pandas as pd
 import re
 from collections import Counter
 import streamlit as st
-from openai import OpenAI
+import openai
 import os
 import joblib
 import glob
@@ -18,6 +18,10 @@ csv_folder_path = os.path.expanduser("~/Desktop/Hello")
 
 # Samla alla CSV-filer i mappen
 csv_files = glob.glob(os.path.join(csv_folder_path, "*.csv"))
+
+# Lägg till felsökningsutskrift
+st.write(f"Sökväg till CSV-filer: {csv_folder_path}")
+st.write(f"Hittade filer: {csv_files}")
 
 # Kontrollera att CSV-filer hittades
 if not csv_files:
@@ -97,7 +101,7 @@ def filter_jobs_by_keyword(keyword):
 # Läser in OpenAI API-nyckel från miljövariabler
 api_key = os.getenv("OPENAI_API_KEY")
 
-client = OpenAI(api_key=api_key)
+openai.api_key = api_key
 
 if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "gpt-3.5-turbo"
