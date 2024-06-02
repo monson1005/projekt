@@ -7,7 +7,7 @@ import joblib
 import openai
 
 # Load OpenAI API key from Streamlit secrets
-openai.api_key = st.secrets["openai"]["api_key"]
+openai.OPENAI_API_KEY = st.secrets["openai"]["api_key"]
 
 # Streamlit app title
 st.title("Nurse Bot 👩‍⚕️")
