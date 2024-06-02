@@ -7,7 +7,7 @@ import joblib
 import openai
 
 # Load OpenAI API key from Streamlit secrets
-openai.OPENAI_API_KEY = st.secrets["openai"]["api_key"]
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 # Streamlit app title
 st.title("Nurse Bot 👩‍⚕️")
@@ -145,8 +145,6 @@ if prompt := st.chat_input("Skriv ditt svar här..."):
                 st.write(f"**Kommun:** {row['Municipality']}")
                 st.write(f"**Arbetsgivare:** {row['Employer_name']}")
                 st.write(f"**Arbetsplats:** {row['Employer_workplace']}")
-                st.write(f"**Publiceringsdatum:** {row['Publication_date']}\n")
-
-    st.session_state.messages.append({"role": "assistant", "content": response})
-
+                st.write(f"**Publiceringsdatum:** {row['Publication_date']}")
+                st.write(f"**Sista ansökningsdag:** {row['Application_deadline']}")
 
